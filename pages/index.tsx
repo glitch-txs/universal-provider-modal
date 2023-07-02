@@ -1,99 +1,25 @@
 import Head from 'next/head'
 import styles from '@/styles/Home.module.css'
-import { UniversalProvider } from "@walletconnect/universal-provider";
-import { useState, useSyncExternalStore } from 'react';
-import { WalletConnectModal } from '@walletconnect/modal';
-
-if(!process.env.NEXT_PUBLIC_PROJECT_ID) throw Error("Project ID missing")
-
-const projectId = process.env.NEXT_PUBLIC_PROJECT_ID as string
-
-const modal = new WalletConnectModal({
-  projectId,
-})
-
-const universal = () => {
-  let provider: Awaited<ReturnType<typeof UniversalProvider.init>>;
-  const init = async(callback: ()=>void)=>{
-    provider = await UniversalProvider.init({
-      projectId: projectId,
-      metadata: {
-        name: "React App",
-        description: "React App for WalletConnect",
-        url: "https://walletconnect.com/",
-        icons: ["https://avatars.githubusercontent.com/u/37784886"],
-      }
-    });
-    callback()
-  }
-  
-  let subscribe = (callback: ()=> void)=>{
-    init(callback)
-    return ()=>{}
-  }
-
-  let getProvider = ()=> provider
-
-  return {
-    subscribe,
-    getProvider
-  }
-}
-
-const store = universal()
+import { useState } from 'react';
+import { useWalletConenct } from '@/hooks/useWalletConnect';
+import { namespaces } from '@/constants/namespaces';
 
 export default function Home() {
 
-  const provider = useSyncExternalStore(store.subscribe, store.getProvider,()=>null)
+  const { provider, modal } = useWalletConenct()
   const [isConnecting, setIsConnecting] = useState<boolean>(false)
 
   async function handleConnect(){
     if(!provider) return
-    provider.on("display_uri", (uri: string) => {
-      modal.openModal({
-        uri
-      })
-    });
-    provider.on("session_delete", ({ id, topic }: any) => {
-      console.log("session_delete", id, topic);
-    });
-    modal.subscribeModal((e)=> {e.open === false && setIsConnecting(false)})
-    setIsConnecting(true)
-    await provider.connect({
-      namespaces: {
-        eip155: {
-          methods: [
-            "eth_sendTransaction",
-            "personal_sign",
-          ],
-          chains: ["eip155:1"],
-          events: ["chainChanged", "accountsChanged"],
-          rpcMap: {
-            1:
-            `https://rpc.walletconnect.com?chainId=eip155:1&projectId=${projectId}`,
-          },
-        }
-      },
-      optionalNamespaces:{
-        eip155: {
-          methods: [
-            "eth_sendTransaction",
-            "personal_sign",
-          ],
-          chains: ["eip155:56", "eip155:137"],
-          events: ["chainChanged", "accountsChanged"],
-          rpcMap: {
-            1:
-            `https://rpc.walletconnect.com?chainId=eip155:1&projectId=${projectId}`,
-          },
-        }
-      }
-    }).catch(console.error)
+    //modal.subscribeModal(({ open })=> {setIsConnecting(open)})
+    await provider.connect(namespaces).catch(console.error)
     modal.closeModal()
   }
 
-  function handleDiconnect(){provider && provider.disconnect()}
-
+  function handleDiconnect(){
+    provider?.session && provider.disconnect()
+  }
+  
   return (
     <>
       <Head>
