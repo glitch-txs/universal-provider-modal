@@ -4,10 +4,12 @@ import { UniversalProvider } from "@walletconnect/universal-provider";
 import { useState, useSyncExternalStore } from 'react';
 import { WalletConnectModal } from '@walletconnect/modal';
 
+if(!process.env.NEXT_PUBLIC_PROJECT_ID) throw Error("Project ID missing")
+
 const projectId = process.env.NEXT_PUBLIC_PROJECT_ID as string
 
 const modal = new WalletConnectModal({
-  projectId: projectId,
+  projectId,
 })
 
 const universal = () => {
@@ -67,12 +69,12 @@ export default function Home() {
           chains: ["eip155:1"],
           events: ["chainChanged", "accountsChanged"],
           rpcMap: {
-            80001:
-              "https://rpc.walletconnect.com?chainId=eip155:80001&projectId=<your walletconnect project id>",
+            1:
+            `https://rpc.walletconnect.com?chainId=eip155:1&projectId=${projectId}`,
           },
         }
       }
-    })
+    }).catch(console.error)
     modal.closeModal()
   }
 
