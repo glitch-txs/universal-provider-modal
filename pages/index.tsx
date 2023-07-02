@@ -45,7 +45,7 @@ const store = universal()
 export default function Home() {
 
   const provider = useSyncExternalStore(store.subscribe, store.getProvider,()=>null)
-  const [isConencting, setIsConnecting] = useState<boolean>(false)
+  const [isConnecting, setIsConnecting] = useState<boolean>(false)
 
   async function handleConnect(){
     if(!provider) return
@@ -73,6 +73,20 @@ export default function Home() {
             `https://rpc.walletconnect.com?chainId=eip155:1&projectId=${projectId}`,
           },
         }
+      },
+      optionalNamespaces:{
+        eip155: {
+          methods: [
+            "eth_sendTransaction",
+            "personal_sign",
+          ],
+          chains: ["eip155:56", "eip155:137"],
+          events: ["chainChanged", "accountsChanged"],
+          rpcMap: {
+            1:
+            `https://rpc.walletconnect.com?chainId=eip155:1&projectId=${projectId}`,
+          },
+        }
       }
     }).catch(console.error)
     modal.closeModal()
@@ -91,7 +105,7 @@ export default function Home() {
       <main className={styles.main}>
         <button onClick={handleConnect} >Connect</button>
         <button onClick={handleDiconnect} >Disconnect</button>
-        {isConencting && "Connecting..."}
+        {isConnecting && "Connecting..."}
       </main>
     </>
   )
