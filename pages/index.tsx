@@ -1,24 +1,12 @@
 import Head from 'next/head'
 import styles from '@/styles/Home.module.css'
-import { useState } from 'react';
-import { useWalletConenct } from '@/hooks/useWalletConnect';
-import { namespaces } from '@/constants/namespaces';
+import { useConnect } from '@/hooks/useConnect'
+
+const projectId = process.env.NEXT_PUBLIC_PROJECT_ID as string
 
 export default function Home() {
 
-  const { provider, modal } = useWalletConenct()
-  const [isConnecting, setIsConnecting] = useState<boolean>(false)
-
-  async function handleConnect(){
-    if(!provider) return
-    //modal.subscribeModal(({ open })=> {setIsConnecting(open)})
-    await provider.connect(namespaces).catch(console.error)
-    modal.closeModal()
-  }
-
-  function handleDiconnect(){
-    provider?.session && provider.disconnect()
-  }
+  const { connect, disconnect, isConnecting, provider } = useConnect({ projectId })
   
   return (
     <>
@@ -29,8 +17,9 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main className={styles.main}>
-        <button onClick={handleConnect} >Connect</button>
-        <button onClick={handleDiconnect} >Disconnect</button>
+        <button onClick={connect} >Connect</button>
+        <button onClick={disconnect} >Disconnect</button>
+        { provider ? 'Connect to WalletConnect' : "Initializing" }
         {isConnecting && "Connecting..."}
       </main>
     </>
