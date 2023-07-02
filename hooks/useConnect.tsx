@@ -13,7 +13,8 @@ export const useConnect = ({ projectId }: Props) => {
 
   async function connect(){
     if(!provider || !modal) return
-    modal.subscribeModal(({ open })=> {setIsConnecting(open)})
+    setIsConnecting(true)
+    modal.subscribeModal(({ open })=>setIsConnecting(open))
     await provider.connect(namespaces).catch(console.error)
     modal.closeModal()
   }
