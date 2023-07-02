@@ -1,11 +1,83 @@
 import Head from 'next/head'
-import Image from 'next/image'
-import { Inter } from 'next/font/google'
 import styles from '@/styles/Home.module.css'
+import { UniversalProvider } from "@walletconnect/universal-provider";
+import { useState, useSyncExternalStore } from 'react';
+import { WalletConnectModal } from '@walletconnect/modal';
 
-const inter = Inter({ subsets: ['latin'] })
+const projectId = process.env.NEXT_PUBLIC_PROJECT_ID as string
+
+const modal = new WalletConnectModal({
+  projectId: projectId,
+})
+
+const universal = () => {
+  let provider: Awaited<ReturnType<typeof UniversalProvider.init>>;
+  const init = async(callback: ()=>void)=>{
+    provider = await UniversalProvider.init({
+      projectId: projectId,
+      metadata: {
+        name: "React App",
+        description: "React App for WalletConnect",
+        url: "https://walletconnect.com/",
+        icons: ["https://avatars.githubusercontent.com/u/37784886"],
+      }
+    });
+    callback()
+  }
+  
+  let subscribe = (callback: ()=> void)=>{
+    init(callback)
+    return ()=>{}
+  }
+
+  let getProvider = ()=> provider
+
+  return {
+    subscribe,
+    getProvider
+  }
+}
+
+const store = universal()
 
 export default function Home() {
+
+  const provider = useSyncExternalStore(store.subscribe, store.getProvider,()=>null)
+  const [isConencting, setIsConnecting] = useState<boolean>(false)
+
+  async function handleConnect(){
+    if(!provider) return
+    provider.on("display_uri", (uri: string) => {
+      modal.openModal({
+        uri
+      })
+    });
+    provider.on("session_delete", ({ id, topic }: any) => {
+      console.log("session_delete", id, topic);
+    });
+    modal.subscribeModal((e)=> {e.open === false && setIsConnecting(false)})
+    setIsConnecting(true)
+    await provider.connect({
+      namespaces: {
+        eip155: {
+          methods: [
+            "eth_sendTransaction",
+            "personal_sign",
+          ],
+          chains: ["eip155:1"],
+          events: ["chainChanged", "accountsChanged"],
+          rpcMap: {
+            80001:
+              "https://rpc.walletconnect.com?chainId=eip155:80001&projectId=<your walletconnect project id>",
+          },
+        }
+      }
+    })
+    modal.closeModal()
+  }
+
+  function handleDiconnect(){provider && provider.disconnect()}
+
   return (
     <>
       <Head>
@@ -14,100 +86,10 @@ export default function Home() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className={`${styles.main} ${inter.className}`}>
-        <div className={styles.description}>
-          <p>
-            Get started by editing&nbsp;
-            <code className={styles.code}>pages/index.tsx</code>
-          </p>
-          <div>
-            <a
-              href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              By{' '}
-              <Image
-                src="/vercel.svg"
-                alt="Vercel Logo"
-                className={styles.vercelLogo}
-                width={100}
-                height={24}
-                priority
-              />
-            </a>
-          </div>
-        </div>
-
-        <div className={styles.center}>
-          <Image
-            className={styles.logo}
-            src="/next.svg"
-            alt="Next.js Logo"
-            width={180}
-            height={37}
-            priority
-          />
-        </div>
-
-        <div className={styles.grid}>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2>
-              Docs <span>-&gt;</span>
-            </h2>
-            <p>
-              Find in-depth information about Next.js features and&nbsp;API.
-            </p>
-          </a>
-
-          <a
-            href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2>
-              Learn <span>-&gt;</span>
-            </h2>
-            <p>
-              Learn about Next.js in an interactive course with&nbsp;quizzes!
-            </p>
-          </a>
-
-          <a
-            href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2>
-              Templates <span>-&gt;</span>
-            </h2>
-            <p>
-              Discover and deploy boilerplate example Next.js&nbsp;projects.
-            </p>
-          </a>
-
-          <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2>
-              Deploy <span>-&gt;</span>
-            </h2>
-            <p>
-              Instantly deploy your Next.js site to a shareable URL
-              with&nbsp;Vercel.
-            </p>
-          </a>
-        </div>
+      <main className={styles.main}>
+        <button onClick={handleConnect} >Connect</button>
+        <button onClick={handleDiconnect} >Disconnect</button>
+        {isConencting && "Connecting..."}
       </main>
     </>
   )
