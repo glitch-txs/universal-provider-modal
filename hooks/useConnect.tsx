@@ -5,9 +5,6 @@ import { useState } from 'react'
 export const useConnect = () => {
   
   const { provider, modal } = useWalletConenct()
-  const a = useWalletConenct()
-  const b = useWalletConenct()
-  const c = useWalletConenct()
   const [isConnecting, setIsConnecting] = useState<boolean>(false)
 
   async function connect(){
