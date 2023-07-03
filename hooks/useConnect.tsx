@@ -1,16 +1,17 @@
 import { namespaces } from '@/constants/namespaces'
 import { useWalletConenct } from './useWalletConnect'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 export const useConnect = () => {
   
   const { provider, modal } = useWalletConenct()
   const [isConnecting, setIsConnecting] = useState<boolean>(false)
 
+  useEffect(()=>modal?.subscribeModal(({ open })=>setIsConnecting(open)),[])
+
   async function connect(){
     if(!provider || !modal) return
     setIsConnecting(true)
-    modal.subscribeModal(({ open })=>setIsConnecting(open))
     await provider.connect(namespaces).catch(console.error)
     modal.closeModal()
   }
