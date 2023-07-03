@@ -5,15 +5,18 @@ import { UniversalProvider } from "@walletconnect/universal-provider";
 const universal = () => {
   let provider: Awaited<ReturnType<typeof UniversalProvider.init>>;
   let modal: InstanceType<typeof WalletConnectModal> | undefined;
-  let projectId: string;
+  let callback: ()=>void;
+  init()
 
-  const init = async(callback: ()=>void)=>{
-    if(!projectId) throw Error("Project ID missing")
+  async function init(){
+    if(!process.env.NEXT_PUBLIC_PROJECT_ID) throw Error("Project ID missing")
+    if(typeof window === 'undefined') return
+    modal = new WalletConnectModal({projectId: process.env.NEXT_PUBLIC_PROJECT_ID as string})
     provider = await UniversalProvider.init({
-      projectId,
+      projectId: process.env.NEXT_PUBLIC_PROJECT_ID as string,
       metadata: {
-        name: document?.title,
-        description: document?.querySelector('meta[name="description"]')?.textContent ?? "",
+        name: windowUtils.document()?.title ?? '',
+        description: windowUtils.document()?.querySelector('meta[name="description"]')?.textContent ?? "",
         url: `${windowUtils.location()}`,
         icons: [`${windowUtils.location()}favicon.ico`],
       }
@@ -26,21 +29,21 @@ const universal = () => {
     //modal.subscribeModal(callback)
     provider.on("session_delete", ({ id, topic }: any) => {
       console.log("session_delete", id, topic);
-      //callback()
+      callback?.()
     });
     provider.on("session_event", ({ event, chainId }: any) => {
       console.log("session_event", event, chainId);
-      //callback()
+      //callback?.()
     });
     provider.on("session_update", ({ topic, params }: any) => {
       console.log("session_update", topic, params);
-      //callback()
+      //callback?.()
     });
-    callback()
+    callback?.()
   }
   
-  let subscribe = (callback: ()=> void)=>{
-    init(callback)
+  let subscribe = (cb: ()=> void)=>{
+    callback = cb
     return ()=>{}
   }
 
@@ -48,17 +51,9 @@ const universal = () => {
 
   let getModal = ()=> modal
 
-  let setProjectId = (id: string) => {
-    projectId = id
-    modal = new WalletConnectModal({
-      projectId: id,
-    })
-  }
-
   return {
     subscribe,
     getProvider,
-    setProjectId,
     getModal
   }
 }

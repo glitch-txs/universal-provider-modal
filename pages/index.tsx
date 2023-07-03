@@ -2,11 +2,9 @@ import Head from 'next/head'
 import styles from '@/styles/Home.module.css'
 import { useConnect } from '@/hooks/useConnect'
 
-const projectId = process.env.NEXT_PUBLIC_PROJECT_ID as string
-
 export default function Home() {
 
-  const { connect, disconnect, isConnecting, provider } = useConnect({ projectId })
+  const { connect, disconnect, isConnecting, provider } = useConnect()
   
   return (
     <>
@@ -20,6 +18,7 @@ export default function Home() {
         <button onClick={connect} >Connect</button>
         <button onClick={disconnect} >Disconnect</button>
         { provider ? 'Connect to WalletConnect' : "Initializing" }
+        <br/>
         {isConnecting && "Connecting..."}
       </main>
     </>

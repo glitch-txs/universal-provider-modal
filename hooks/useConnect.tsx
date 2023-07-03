@@ -2,13 +2,12 @@ import { namespaces } from '@/constants/namespaces'
 import { useWalletConenct } from './useWalletConnect'
 import { useState } from 'react'
 
-type Props = {
-  projectId: string
-}
-
-export const useConnect = ({ projectId }: Props) => {
+export const useConnect = () => {
   
-  const { provider, modal } = useWalletConenct(projectId)
+  const { provider, modal } = useWalletConenct()
+  const a = useWalletConenct()
+  const b = useWalletConenct()
+  const c = useWalletConenct()
   const [isConnecting, setIsConnecting] = useState<boolean>(false)
 
   async function connect(){
